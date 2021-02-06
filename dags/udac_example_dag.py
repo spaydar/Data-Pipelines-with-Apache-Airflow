@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
                                 LoadDimensionOperator, DataQualityOperator)
 from helpers import SqlQueries
@@ -26,6 +27,13 @@ dag = DAG('udac_example_dag',
         )
 
 start_operator = DummyOperator(task_id='Begin_execution',  dag=dag)
+
+create_tables = PostgresOperator(
+    task_id="Create_tables",
+    dag=dag,
+    sql='create_tables.sql',
+    postgres_conn_id="redshift"
+)
 
 stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
@@ -69,10 +77,10 @@ run_quality_checks = DataQualityOperator(
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
+start_operator >> create_tables
 
-
-start_operator >> stage_events_to_redshift
-start_operator >> stage_songs_to_redshift
+create_tables >> stage_events_to_redshift
+create_tables >> stage_songs_to_redshift
 
 stage_events_to_redshift >> load_songplays_table
 stage_songs_to_redshift >> load_songplays_table
