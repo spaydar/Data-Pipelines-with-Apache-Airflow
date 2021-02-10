@@ -16,9 +16,6 @@ class StageToRedshiftOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self,
-                 # Define your operators params (with defaults) here
-                 # Example:
-                 # redshift_conn_id=your-connection-name
                  table="",
                  redshift_conn_id="redshift",
                  aws_credentials_id="aws_credentials",
@@ -28,9 +25,6 @@ class StageToRedshiftOperator(BaseOperator):
                  *args, **kwargs):
 
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
-        # Map params here
-        # Example:
-        # self.conn_id = conn_id
         self.table = table
         self.redshift_conn_id = redshift_conn_id
         self.aws_credentials_id = aws_credentials_id
@@ -59,5 +53,6 @@ class StageToRedshiftOperator(BaseOperator):
         self.log.info('Formatted S3 path for read and SQL COPY command. Running COPY command in Redshift')
         
         redshift.run(copy_command)
+        self.log.info('Redshift COPY command complete for table ' + self.table)
 
 
