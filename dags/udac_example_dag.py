@@ -103,7 +103,10 @@ load_time_dimension_table = LoadDimensionOperator(
 
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
-    dag=dag
+    dag=dag,
+    table_names=['songplays', 'users', 'songs', 'artists', 'time'],
+    redshift_conn_id="redshift",
+    sql_queries_dict={ 'SELECT COUNT(*) FROM {}': (lambda x: x > 0) }
 )
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
