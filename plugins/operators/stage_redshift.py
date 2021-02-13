@@ -8,10 +8,10 @@ class StageToRedshiftOperator(BaseOperator):
     
     copy_sql_template = """
         COPY {}
-        FROM {}
-        ACCESS_KEY_ID {}
-        SECRET_ACCESS_KEY {}
-        JSON {}
+        FROM '{}'
+        ACCESS_KEY_ID '{}'
+        SECRET_ACCESS_KEY '{}'
+        JSON '{}'
     """
 
     @apply_defaults
