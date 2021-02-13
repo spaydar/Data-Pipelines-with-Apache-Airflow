@@ -75,15 +75,15 @@ Tasks dependencies are configured in order to adhere to the following graph:
 
 The data pipeline uses 4 modular custom operators that stage the data, transform the data, and run checks on data quality. Each operator runs SQL statements against the Redshift database, which they connect to using Airflow's `PostgresHook`.
 
-Stage Operator
-	The stage operator can load any JSON formatted files from S3 to Redshift. The operator creates and runs a SQL `COPY` statement based on the parameters provided. The operator's parameters specify where in S3 the file is loaded from and what is the targeted table. Here are examples of `COPY` statements generated and executed by the stage operator:
+*Stage Operator*
+The stage operator can load any JSON formatted files from S3 to Redshift. The operator creates and runs a SQL `COPY` statement based on the parameters provided. The operator's parameters specify where in S3 the file is loaded from and what is the targeted table. Here are examples of `COPY` statements generated and executed by the stage operator:
     
     COPY staging_events FROM 's3://udacity-dend/log_data' ACCESS_KEY_ID '{aws_key}' SECRET_ACCESS_KEY '{aws_secret}' JSON 's3://udacity-dend/log_json_path.json';
     
     COPY staging_songs FROM 's3://udacity-dend/song_data' ACCESS_KEY_ID '{aws_key}' SECRET_ACCESS_KEY '{aws_secret}' JSON 'auto';
 
-Fact and Dimension Operators
+*Fact and Dimension Operators*
 
 
-Data Quality Operator
+*Data Quality Operator*
 
