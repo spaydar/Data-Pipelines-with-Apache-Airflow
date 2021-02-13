@@ -57,7 +57,7 @@ For more details on how this data is modeled as it pertains to analytical querie
 
 ###### DAG
 
-The data pipeline uses a single DAG, which implements the following requirements in its `default parameters`:
+The data pipeline uses a single DAG for each task, which implements the following requirements in its default parameters:
 
 - The DAG does not have dependencies on past runs
 - On failure, a task is retried 3 times
@@ -85,6 +85,63 @@ The stage operator can load any JSON formatted files from S3 to Redshift. The op
 
 **Fact and Dimension Operators**
 
+The fact and dimension operators utilitze the SQL helper class to run data transformations and insert the results into the star schema tables. The dimension operator has a parameter to allow for a truncate-insert pattern in which the target table is emptied before the load.
 
 **Data Quality Operator**
 
+The data quality operator is used to run quality checks on the data itself. The operator accepts at least one SQL-based test case with a function to evaluate if the result of the query matches the expected output. If there is no match, the operator raises an exception so the task can retry and fail eventually.
+
+## File and Code Structure
+
+Most of the SQL queries for the project are written in the `dags/create_tables.sql` and `plugins/helpers/sql_queries.py` files for purposes of modularity and ease of maintenance. These files contain commands to drop all tables if they exists, create tables, and select data from staging tables to insert into fact and dimension tables.
+
+The definitions of the custom operators reside in `plugins/operators/`. Logic for connecting to Redshift and executing queries is implemented directly in the operators, along with minimal SQL skeleton code that is filled in with parameters passed to the operators.
+
+The data pipeline is implemented in the `dags/udac_example_dag.py` script. In this script, the DAG and its `default_args` are instantiated. Also, operators are instantiated as tasks and their dependencies are defined. To run the pipeline, start an Airflow server and turn on the DAG. The pipeline will run once at the time the DAG is turned on, and will continue to run at the top of every hour that the DAG remains on. The Airflow UI can be used to monitor the status of each DAG run, and details about each task can be viewed in its logs.
+
+## Code Samples
+
+Instantiate the DAG and its default parameters:
+
+	default_args = {
+    	'owner': 'udacity',
+    	'start_date': datetime(2019, 1, 12),
+    	'depends_on_past': False,
+    	'retries': 3,
+    	'retry_delay': timedelta(minutes=5),
+    	'email_on_retry': False
+	}
+
+	dag = DAG('udac_example_dag',
+          	default_args=default_args,
+          	description='Load and transform data in Redshift with Airflow',
+          	schedule_interval='0 * * * *',
+          	catchup=False
+        )
+        
+Instantiate a load dimension-table task:
+
+	load_user_dimension_table = LoadDimensionOperator(
+    	task_id='Load_user_dim_table',
+    	dag=dag,
+    	table='users',
+    	redshift_conn_id="redshift",
+    	sql_statement=SqlQueries.user_table_insert,
+    	truncate_insert_on=True
+	)
+
+
+Instantiate the data-quality check task:
+
+	run_quality_checks = DataQualityOperator(
+    	task_id='Run_data_quality_checks',
+    	dag=dag,
+    	table_names=['songplays', 'users', 'songs', 'artists', 'time'],
+    	redshift_conn_id="redshift",
+    	sql_queries_dict={ 'SELECT COUNT(*) FROM {}': (lambda x: x > 0) }
+	)
+    
+Define task dependencies:
+
+	stage_events_to_redshift >> load_songplays_table
+	stage_songs_to_redshift >> load_songplays_table
