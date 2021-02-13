@@ -21,7 +21,7 @@ class LoadDimensionOperator(BaseOperator):
         self.truncate_insert_on = truncate_insert_on
 
     def execute(self, context):
-        self.log.info('Starting LoadDimensionOperator for table ' + table)
+        self.log.info('Starting LoadDimensionOperator for table ' + self.table)
         
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         self.log.info('Initialized PostgresHook with Redshift credentials')
