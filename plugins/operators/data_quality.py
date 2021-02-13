@@ -19,7 +19,7 @@ class DataQualityOperator(BaseOperator):
         self.sql_queries_dict = sql_queries_dict
 
     def execute(self, context):
-        self.log.info('Starting DataQualityOperator. Checking against the following tables: ' + str(table_names))
+        self.log.info('Starting DataQualityOperator. Checking against the following tables: ' + str(self.table_names))
         
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         self.log.info('Initialized PostgresHook with Redshift credentials')
@@ -28,14 +28,24 @@ class DataQualityOperator(BaseOperator):
             
             for sql_query in self.sql_queries_dict:
                 
-                result = redshift.run(sql_query.format(table))
+                self.log.info("Running query '" + sql_query.format(table) + "'")
+                
+                result = redshift.get_records(sql_query.format(table))
+                
+                if not len(result) > 0:
+                    raise ValueError("Result array of 'redshift.get_records()' does not have length greater than 0")
+                    
+                if not len(result[0]) > 0:
+                    raise ValueError("First tuple in result array of 'redshift.get_records()' does not have length greater than 0")
+                    
+                result = result[0][0]
                 
                 if self.sql_queries_dict[sql_query](result):
                     
-                    self.log.info("Table " + table + " passed test associated with query " + sql_query)
+                    self.log.info("Passed test associated with query " + sql_query.format(table) + " - Result: " + str(result))
                     
                 else:
                     
-                    raise ValueError("Table " + table + " failed test associated with query " + sql_query + ". Result: " + str(result))
+                    raise ValueError("Failed test associated with query " + sql_query.format(table) + " - Result: " + str(result))
                     
-        self.log.info('DataQualityOperator complete')
+        self.log.info('DataQualityOperator complete successfully')
